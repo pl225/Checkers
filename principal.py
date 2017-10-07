@@ -1,7 +1,7 @@
 import pygame
 from pygame.locals import *
 from sys import exit
-from Modelo import Tabuleiro, Posicao, JogadorCPU, JogadorPlayer, Peca
+from Modelo import Tabuleiro, JogadorCPU, JogadorPlayer, Jogo
 
 pygame.init()
 
@@ -28,6 +28,13 @@ turno = p1
 #t.procuraPeca((350, 100)).peca = Peca((0, 0, 255))
 #t.procuraPeca((220, 300)).peca = Peca((0, 0, 255))
 
+#for l in t.posicoes:
+ #   for p in l:
+  #      print p.linha, p.coluna,
+        
+   # print ''
+    
+#exit()
 while True:
 
     for event in pygame.event.get():
@@ -40,8 +47,10 @@ while True:
             
     if turno == cpu:
         # tabuleiro = recebe novo tabuleiro do minmax
+        t = Jogo.minmax(cpu, p1, t, 4)
         turno = p1
         print "cpu"
+        
     elif botoesMouse and botoesMouse[0] and p1Clicou:
         # se tem movimentos obrigatorios, seta cursor
         # se nao pega click do usuario

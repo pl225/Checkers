@@ -1,9 +1,55 @@
 import pygame, math
+from copy import deepcopy
 
 class Jogo(object):
 
     def __init__(self):
         return None;
+    
+    @staticmethod
+    def minmax(cpu, p1, tabuleiro, profundidade):
+        return Jogo.maxValue(cpu, p1, tabuleiro, profundidade, -1000, 1000)
+    
+    @staticmethod
+    def maxValue(cpu, p1, tabuleiro, profundidade, alpha, beta):
+        if profundidade == 0 or tabuleiro.estadoAtual(cpu, p1) != 0:
+            return tabuleiro
+        
+        melhorValor = -1000
+        melhorItem = None
+        
+        for t in cpu.movimentosRound(tabuleiro):
+            tMin = Jogo.minValue(cpu, p1, t, profundidade - 1, alpha, beta)
+            
+            if tMin.avaliacao(cpu, p1) > melhorValor:
+                melhorValor = tMin.avaliacao(cpu, p1)
+                melhorItem = t
+            
+            alpha = max(alpha, melhorValor)
+            if beta <= alpha: break
+            
+        return melhorItem
+             
+            
+    @staticmethod
+    def minValue(cpu, p1, tabuleiro, profundidade, alpha, beta):
+        if profundidade == 0 or tabuleiro.estadoAtual(p1, cpu) != 0:
+            return tabuleiro
+        
+        melhorValor = 1000
+        melhorItem = None
+        
+        for t in p1.movimentosRound(tabuleiro):
+            tMin = Jogo.maxValue(cpu, p1, t, profundidade - 1, alpha, beta)
+            
+            if tMin.avaliacao(p1, cpu) < melhorValor:
+                melhorValor = tMin.avaliacao(p1, cpu)
+                melhorItem = t 
+            
+            beta = min(beta, melhorValor)
+            if beta <= alpha: break
+            
+        return melhorItem
 
 class Tabuleiro(object):
 
@@ -14,6 +60,20 @@ class Tabuleiro(object):
         self.posicoes = criarMatriz(dTela, dGrade)
         self.pecas = None
         self.cliques = [0, None]
+        
+    def avaliacao(self, p1, p2):
+        p1Posicoes = [p for l in self.posicoes for p in l if p.peca and p.peca.cor == p1.cor]
+        p2Posicoes = [p for l in self.posicoes for p in l if p.peca and p.peca.cor == p2.cor]
+        
+        return len(p1Posicoes) + 12 - len(p2Posicoes)
+        
+    def estadoAtual(self, p1, p2):
+        p1Posicoes = [p for l in self.posicoes for p in l if p.peca and p.peca.cor == p1.cor]
+        p2Posicoes = [p for l in self.posicoes for p in l if p.peca and p.peca.cor == p2.cor]
+        
+        if len(p1Posicoes) == 0: return 1;
+        if len(p2Posicoes) == 0: return - 1;
+        return 0
 
     def desenharTabuleiro(self, screen):
         for i in range(self.dimensao):
@@ -47,6 +107,10 @@ class Tabuleiro(object):
             elif self.cliques[0] == 1:
                 if (pos[0] / self.dGrade, pos[1] / self.dGrade) in player.movimentosPossiveis(self.cliques[1], self):
                     player.atualizaTabuleiro(self.cliques[1], pos, self)
+                else:
+                    self.cliques[0] = 0
+                    self.cliques[1] = None
+                    return (False, False) # retorno q ainda nao me movi
                 self.cliques[0] = 0
                 self.cliques[1] = None 
                 return (False, True) # retorno que movi com sucesso
@@ -112,6 +176,34 @@ class Jogador(object):
         self.pontuacao = pontuacao
         self.cor = cor
         
+    def movimentosRound(self, tabuleiro): # retorna lista de tabuleiros
+        obrigatoriedade = self.obrigadoComer(tabuleiro)
+        listaTabuleiros = []
+        
+        if obrigatoriedade[0]: # melhorar
+            movs = self.movimentosPossiveis([obrigatoriedade[1].x + tabuleiro.dGrade / 2, 
+                                             obrigatoriedade[1].y + tabuleiro.dGrade / 2], tabuleiro)
+            for m in movs:
+                tAux = deepcopy(tabuleiro)
+                self.atualizaTabuleiro([obrigatoriedade[1].x + tAux.dGrade / 2, obrigatoriedade[1].y + tAux.dGrade / 2], 
+                                       [tAux.posicoes[m[0]][m[1]].x + tAux.dGrade / 2,
+                                        tAux.posicoes[m[0]][m[1]].y + tAux.dGrade / 2], tAux)
+                listaTabuleiros.append(tAux)
+                
+        else:
+            minhasPosicoes = [p for l in tabuleiro.posicoes for p in l if p.peca and p.peca.cor == self.cor] # coleta posicoes do jogador
+            for p in minhasPosicoes:
+                movs = self.movimentosPossiveis([p.x + tabuleiro.dGrade / 2, p.y + tabuleiro.dGrade / 2], tabuleiro)
+                for m in movs:
+                    tAux = deepcopy(tabuleiro) 
+                    self.atualizaTabuleiro([p.x + tabuleiro.dGrade / 2, p.y + tabuleiro.dGrade / 2], 
+                                           [tAux.posicoes[m[0]][m[1]].x + tAux.dGrade / 2, 
+                                            tAux.posicoes[m[0]][m[1]].y + tAux.dGrade / 2], tAux)
+                    listaTabuleiros.append(tAux)
+                    
+        return listaTabuleiros
+                
+        
     def obrigadoComer(self, tabuleiro):
         movs = [(1, -1), (-1, -1), (1, 1), (-1, 1)]
         minhasPosicoes = [p for l in tabuleiro.posicoes for p in l if p.peca and p.peca.cor == self.cor] # coleta posicoes do jogador
@@ -134,28 +226,13 @@ class Jogador(object):
                         
         return (False, None)
     
-    def movimentosPossiveis(self, pos, tabuleiro):
+    def movimentosLegais(self):
         raise NotImplementedError
     
-    def atualizaTabuleiro(self, p1, p2, tabuleiro):
-        p1 = [p1[0] / tabuleiro.dGrade, p1[1] / tabuleiro.dGrade]
-        p2 = [p2[0] / tabuleiro.dGrade, p2[1] / tabuleiro.dGrade] 
-        if math.fabs(p1[0] - p2[0]) == 1: # movimento simples
-            tabuleiro.posicoes[p2[0]][p2[1]].peca = tabuleiro.posicoes[p1[0]][p1[1]].peca
-            tabuleiro.posicoes[p1[0]][p1[1]].peca = None
-        else:
-            tabuleiro.posicoes[p2[0]][p2[1]].peca = tabuleiro.posicoes[p1[0]][p1[1]].peca
-            tabuleiro.posicoes[p1[0]][p1[1]].peca = None
-            tabuleiro.posicoes[(p1[0] + p2[0]) / 2][(p1[1] + p2[1])/2].peca = None            
-            
-class JogadorPlayer(Jogador):
-    def __init__(self, cor):
-        super(JogadorPlayer, self).__init__(0, cor)
-        
     def movimentosPossiveis(self, pos, tabuleiro):
         # tem q decidir quais sao os possiveis e os obrigatirios dos movimentos abaixo (depende se o jogador esta em cima ou embaixo
         # vou supor q eh em cima
-        movs = [(-1, 1), (-1, -1), (1, 1), (1, -1)]
+        movs = self.movimentosLegais()
         obrigatorio = []
         livre = []
         p = tabuleiro.procuraPeca(pos)
@@ -190,14 +267,32 @@ class JogadorPlayer(Jogador):
             
         if len(obrigatorio) > 0: return obrigatorio
         else: return livre
+    
+    def atualizaTabuleiro(self, p1, p2, tabuleiro):
+        p1 = [p1[0] / tabuleiro.dGrade, p1[1] / tabuleiro.dGrade]
+        p2 = [p2[0] / tabuleiro.dGrade, p2[1] / tabuleiro.dGrade]
+
+        if math.fabs(p1[0] - p2[0]) == 1: # movimento simples
+            tabuleiro.posicoes[p2[0]][p2[1]].peca = tabuleiro.posicoes[p1[0]][p1[1]].peca
+            tabuleiro.posicoes[p1[0]][p1[1]].peca = None
+        else:
+            tabuleiro.posicoes[p2[0]][p2[1]].peca = tabuleiro.posicoes[p1[0]][p1[1]].peca
+            tabuleiro.posicoes[p1[0]][p1[1]].peca = None
+            tabuleiro.posicoes[(p1[0] + p2[0]) / 2][(p1[1] + p2[1])/2].peca = None            
+            
+class JogadorPlayer(Jogador):
+    def __init__(self, cor):
+        super(JogadorPlayer, self).__init__(0, cor)
+        
+    def movimentosLegais(self):
+        return [(-1, 1), (-1, -1), (1, 1), (1, -1)]
                            
 class JogadorCPU(Jogador):
     def __init__(self, cor):
         super(JogadorCPU, self).__init__(0, cor)
         
-    def movimentosPossiveis(self, pos):
-        # minmax
-        return None
+    def movimentosLegais(self):
+        return [(1, 1), (1, -1), (-1, 1), (-1, -1)]        
 
 class Posicao(object):
     def __init__(self, linha, coluna, peca = None, cor = None):
