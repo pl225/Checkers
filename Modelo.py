@@ -14,14 +14,12 @@ class Jogo(object):
     def maxValue(cpu, p1, tabuleiro, profundidade, alpha, beta):
         if profundidade == 0 or tabuleiro.estadoAtual(cpu, p1) != 0:
             return tabuleiro
-        
         melhorValor = -1000
         melhorItem = None
-        
         for t in cpu.movimentosRound(tabuleiro):
             tMin = Jogo.minValue(cpu, p1, t, profundidade - 1, alpha, beta)
             
-            if tMin.avaliacao(cpu, p1) > melhorValor:
+            if tMin and tMin.avaliacao(cpu, p1) > melhorValor:
                 melhorValor = tMin.avaliacao(cpu, p1)
                 melhorItem = t
             
@@ -35,14 +33,12 @@ class Jogo(object):
     def minValue(cpu, p1, tabuleiro, profundidade, alpha, beta):
         if profundidade == 0 or tabuleiro.estadoAtual(p1, cpu) != 0:
             return tabuleiro
-        
         melhorValor = 1000
         melhorItem = None
-        
         for t in p1.movimentosRound(tabuleiro):
             tMin = Jogo.maxValue(cpu, p1, t, profundidade - 1, alpha, beta)
             
-            if tMin.avaliacao(p1, cpu) < melhorValor:
+            if tMin and tMin.avaliacao(p1, cpu) < melhorValor:
                 melhorValor = tMin.avaliacao(p1, cpu)
                 melhorItem = t 
             
@@ -86,7 +82,11 @@ class Tabuleiro(object):
                 if p.peca:
                     xPeca = p.x + (self.dGrade / 2)
                     yPeca = p.y + (self.dGrade / 2)
-                    pygame.draw.circle(screen, p.peca.cor, (int(yPeca),int(xPeca)), int(self.dGrade / 2), 0)
+                    if not p.peca.dama:
+                        pygame.draw.circle(screen, p.peca.cor, (int(yPeca),int(xPeca)), int(self.dGrade / 2), 0)
+                    else:
+                        pygame.draw.circle(screen, p.peca.cor, (int(yPeca),int(xPeca)), int(self.dGrade / 2), 0)
+                        pygame.draw.circle(screen, (107,35,142), (int(yPeca),int(xPeca)), int(self.dGrade / 4), 8)
 
     def clickUsuario(self, player, pos):
         obrigadoComer = player.obrigadoComer(self)
@@ -100,7 +100,7 @@ class Tabuleiro(object):
             if peca and peca.cor == player.cor and self.cliques[0] == 1:
                 self.cliques[0] = 0
                 self.cliques[1] = None    
-            if self.cliques[0] == 0 and peca and peca.cor == player.cor:
+            elif self.cliques[0] == 0 and peca and peca.cor == player.cor:
                 # muda cor da posicao pra dizer que clicou
                 self.cliques[0] = 1 
                 self.cliques[1] = pos
@@ -181,14 +181,26 @@ class Jogador(object):
         listaTabuleiros = []
         
         if obrigatoriedade[0]: # melhorar
+            pecaObrigatoria =  obrigatoriedade[1].peca
             movs = self.movimentosPossiveis([obrigatoriedade[1].x + tabuleiro.dGrade / 2, 
                                              obrigatoriedade[1].y + tabuleiro.dGrade / 2], tabuleiro)
-            for m in movs:
-                tAux = deepcopy(tabuleiro)
-                self.atualizaTabuleiro([obrigatoriedade[1].x + tAux.dGrade / 2, obrigatoriedade[1].y + tAux.dGrade / 2], 
-                                       [tAux.posicoes[m[0]][m[1]].x + tAux.dGrade / 2,
-                                        tAux.posicoes[m[0]][m[1]].y + tAux.dGrade / 2], tAux)
-                listaTabuleiros.append(tAux)
+            tAux = deepcopy(tabuleiro)
+            print 'aqui'
+            while True:
+                for m in movs:
+                    print 'ola'
+                    self.atualizaTabuleiro([obrigatoriedade[1].x + tAux.dGrade / 2, obrigatoriedade[1].y + tAux.dGrade / 2], 
+                                           [tAux.posicoes[m[0]][m[1]].x + tAux.dGrade / 2,
+                                            tAux.posicoes[m[0]][m[1]].y + tAux.dGrade / 2], tAux)
+                obrigatoriedade = self.obrigadoComer(tAux)
+                print obrigatoriedade
+                if obrigatoriedade[0] and obrigatoriedade[1].peca == pecaObrigatoria:
+                    print 'ok'
+                    movs = self.movimentosPossiveis([obrigatoriedade[1].x + tAux.dGrade / 2, 
+                                             obrigatoriedade[1].y + tAux.dGrade / 2], tAux)
+                else: 
+                    listaTabuleiros.append(tAux)
+                    break
                 
         else:
             minhasPosicoes = [p for l in tabuleiro.posicoes for p in l if p.peca and p.peca.cor == self.cor] # coleta posicoes do jogador
@@ -207,22 +219,39 @@ class Jogador(object):
     def obrigadoComer(self, tabuleiro):
         movs = [(1, -1), (-1, -1), (1, 1), (-1, 1)]
         minhasPosicoes = [p for l in tabuleiro.posicoes for p in l if p.peca and p.peca.cor == self.cor] # coleta posicoes do jogador
-        
+
         for p in minhasPosicoes:
-            for m in movs:
-                p = tabuleiro.procuraPeca([p.x, p.y])
-                i = p.linha + m[0]
-                j = p.coluna + m[1]
-                if i < 0 or j < 0 or i == tabuleiro.dimensao or j == tabuleiro.dimensao: continue # verifica posicao valida
-                if tabuleiro.posicoes[i][j].peca == None: continue # ve se posicao esta vazia
-                else:
-                    if tabuleiro.posicoes[i][j].peca.cor == self.cor: continue # ve se eh uma peca do proprio jogador
+            if not p.peca.dama:
+                for m in movs:
+                    #p = tabuleiro.procuraPeca([p.x, p.y])
+                    i = p.linha + m[0]
+                    j = p.coluna + m[1]
+                    if i < 0 or j < 0 or i == tabuleiro.dimensao or j == tabuleiro.dimensao: continue # verifica posicao valida
+                    if tabuleiro.posicoes[i][j].peca == None: continue # ve se posicao esta vazia
                     else:
+                        if tabuleiro.posicoes[i][j].peca.cor == self.cor: continue # ve se eh uma peca do proprio jogador
+                        else:
+                            i += m[0] # pula
+                            j += m[1]
+                            if i < 0 or j < 0 or i == tabuleiro.dimensao or j == tabuleiro.dimensao: continue # verifica movimento valido
+                            elif tabuleiro.posicoes[i][j].peca == None: # ve se a posicao esta sem peca 
+                                return (True, p)
+            else:
+                for m in movs:
+                    #p = tabuleiro.procuraPeca([p.x, p.y])
+                    i = p.linha + m[0]
+                    j = p.coluna + m[1]
+                    while not (i < 0 or j < 0 or i == tabuleiro.dimensao or j == tabuleiro.dimensao):
+                        if tabuleiro.posicoes[i][j].peca != None: 
+                            if tabuleiro.posicoes[i][j].peca.cor == self.cor: break # ve se eh uma peca do proprio jogador
+                            else:
+                                i += m[0] # pula
+                                j += m[1]
+                                if i < 0 or j < 0 or i == tabuleiro.dimensao or j == tabuleiro.dimensao: break # verifica movimento valido
+                                elif tabuleiro.posicoes[i][j].peca == None: # ve se a posicao esta sem peca 
+                                    return (True, p)
                         i += m[0] # pula
                         j += m[1]
-                        if i < 0 or j < 0 or i == tabuleiro.dimensao or j == tabuleiro.dimensao: continue # verifica movimento valido
-                        elif tabuleiro.posicoes[i][j].peca == None: # ve se a posicao esta sem peca 
-                            return (True, p)
                         
         return (False, None)
     
@@ -236,39 +265,60 @@ class Jogador(object):
         obrigatorio = []
         livre = []
         p = tabuleiro.procuraPeca(pos)
-        for m in movs[2:]: # movimentos q nao posso fazer, mas se tiver peca eu tenho q fazer
-            i = p.linha + m[0]
-            j = p.coluna + m[1]
-            if i < 0 or j < 0 or i == tabuleiro.dimensao or j == tabuleiro.dimensao: continue # verifica posicao valida
-            if tabuleiro.posicoes[i][j].peca == None: continue # ve se posicao esta vazia
-            else:
-                if tabuleiro.posicoes[i][j].peca.cor == self.cor: continue # ve se eh uma peca do proprio jogador
-                else:
+        if p.peca.dama:
+            for m in movs:
+                i = p.linha + m[0]
+                j = p.coluna + m[1]
+                while not (i < 0 or j < 0 or i == tabuleiro.dimensao or j == tabuleiro.dimensao):
+                    if tabuleiro.posicoes[i][j].peca == None: 
+                        livre.append((i, j))
+                    else:
+                        if tabuleiro.posicoes[i][j].peca.cor == self.cor: break # ve se eh uma peca do proprio jogador
+                        else:
+                            i += m[0] # pula
+                            j += m[1]
+                            if i < 0 or j < 0 or i == tabuleiro.dimensao or j == tabuleiro.dimensao: break # verifica movimento valido
+                            elif tabuleiro.posicoes[i][j].peca == None: # ve se a posicao esta sem peca 
+                                obrigatorio.append((i, j))
+                                break
                     i += m[0] # pula
                     j += m[1]
-                    if i < 0 or j < 0 or i == tabuleiro.dimensao or j == tabuleiro.dimensao: continue # verifica movimento valido
-                    elif tabuleiro.posicoes[i][j].peca == None: # ve se a posicao esta sem peca 
-                        obrigatorio.append((i, j))
-                        
-        for m in movs[:2]: # movimentos q posso fazer, mas se tiver peca eu tenho q fazer
-            i = p.linha + m[0]
-            j = p.coluna + m[1]
-            if i < 0 or j < 0 or i == tabuleiro.dimensao or j == tabuleiro.dimensao: continue # verifica posicao valida
-            if tabuleiro.posicoes[i][j].peca == None: 
-                livre.append((i, j))
-            else:
-                if tabuleiro.posicoes[i][j].peca.cor == self.cor: continue # ve se eh uma peca do proprio jogador
+        else:
+            for m in movs[2:]: # movimentos q nao posso fazer, mas se tiver peca eu tenho q fazer
+                i = p.linha + m[0]
+                j = p.coluna + m[1]
+                if i < 0 or j < 0 or i == tabuleiro.dimensao or j == tabuleiro.dimensao: continue # verifica posicao valida
+                if tabuleiro.posicoes[i][j].peca == None: continue # ve se posicao esta vazia
                 else:
-                    i += m[0] # pula
-                    j += m[1]
-                    if i < 0 or j < 0 or i == tabuleiro.dimensao or j == tabuleiro.dimensao: continue # verifica movimento valido
-                    elif tabuleiro.posicoes[i][j].peca == None: # ve se a posicao esta sem peca 
-                        obrigatorio.append((i, j))    
-            
+                    if tabuleiro.posicoes[i][j].peca.cor == self.cor: continue # ve se eh uma peca do proprio jogador
+                    else:
+                        i += m[0] # pula
+                        j += m[1]
+                        if i < 0 or j < 0 or i == tabuleiro.dimensao or j == tabuleiro.dimensao: continue # verifica movimento valido
+                        elif tabuleiro.posicoes[i][j].peca == None: # ve se a posicao esta sem peca 
+                            obrigatorio.append((i, j))
+                            
+            for m in movs[:2]: # movimentos q posso fazer, mas se tiver peca eu tenho q fazer
+                i = p.linha + m[0]
+                j = p.coluna + m[1]
+                if i < 0 or j < 0 or i == tabuleiro.dimensao or j == tabuleiro.dimensao: continue # verifica posicao valida
+                if tabuleiro.posicoes[i][j].peca == None: 
+                    livre.append((i, j))
+                else:
+                    if tabuleiro.posicoes[i][j].peca.cor == self.cor: continue # ve se eh uma peca do proprio jogador
+                    else:
+                        i += m[0] # pula
+                        j += m[1]
+                        if i < 0 or j < 0 or i == tabuleiro.dimensao or j == tabuleiro.dimensao: continue # verifica movimento valido
+                        elif tabuleiro.posicoes[i][j].peca == None: # ve se a posicao esta sem peca 
+                            obrigatorio.append((i, j))    
+                
         if len(obrigatorio) > 0: return obrigatorio
         else: return livre
     
     def atualizaTabuleiro(self, p1, p2, tabuleiro):
+        corAzul = (0, 0, 255)   
+        corVerde = (0, 204, 0)
         p1 = [p1[0] / tabuleiro.dGrade, p1[1] / tabuleiro.dGrade]
         p2 = [p2[0] / tabuleiro.dGrade, p2[1] / tabuleiro.dGrade]
 
@@ -276,9 +326,30 @@ class Jogador(object):
             tabuleiro.posicoes[p2[0]][p2[1]].peca = tabuleiro.posicoes[p1[0]][p1[1]].peca
             tabuleiro.posicoes[p1[0]][p1[1]].peca = None
         else:
-            tabuleiro.posicoes[p2[0]][p2[1]].peca = tabuleiro.posicoes[p1[0]][p1[1]].peca
+            if not tabuleiro.posicoes[p1[0]][p1[1]].peca.dama:
+                tabuleiro.posicoes[p2[0]][p2[1]].peca = tabuleiro.posicoes[p1[0]][p1[1]].peca
+                tabuleiro.posicoes[(p1[0] + p2[0]) / 2][(p1[1] + p2[1])/2].peca = None
+            else:
+                m = ( int((p2[0] - p1[0]) / math.fabs(p2[0] - p1[0])), int((p2[1] - p1[1]) / math.fabs(p2[1] - p1[1])) )
+                pRef = tabuleiro.posicoes[p1[0]][p1[1]]
+                i = pRef.linha; j = pRef.coluna
+                while True:
+                    i += m[0]
+                    j += m[1]
+                    if i < 0 or j < 0 or i == tabuleiro.dimensao or j == tabuleiro.dimensao:
+                        break
+                    if tabuleiro.posicoes[i][j].peca:
+                        if tabuleiro.posicoes[i][j].peca.cor == self.cor: break # ve se eh uma peca do proprio jogador
+                        else:
+                            tabuleiro.posicoes[i][j].peca = None
+                            break
+                tabuleiro.posicoes[p2[0]][p2[1]].peca = tabuleiro.posicoes[p1[0]][p1[1]].peca
             tabuleiro.posicoes[p1[0]][p1[1]].peca = None
-            tabuleiro.posicoes[(p1[0] + p2[0]) / 2][(p1[1] + p2[1])/2].peca = None            
+
+        if p2[0] == 0 and tabuleiro.posicoes[p2[0]][p2[1]].peca.cor == corVerde:
+            tabuleiro.posicoes[p2[0]][p2[1]].peca.dama = True
+        elif p2[0] == 7 and tabuleiro.posicoes[p2[0]][p2[1]].peca.cor == corAzul:
+            tabuleiro.posicoes[p2[0]][p2[1]].peca.dama = True
             
 class JogadorPlayer(Jogador):
     def __init__(self, cor):

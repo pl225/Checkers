@@ -1,7 +1,7 @@
 import pygame
 from pygame.locals import *
 from sys import exit
-from Modelo import Tabuleiro, JogadorCPU, JogadorPlayer, Jogo
+from Modelo import Tabuleiro, JogadorCPU, JogadorPlayer, Jogo, Peca
 
 pygame.init()
 
@@ -45,11 +45,20 @@ while True:
         if event.type == pygame.MOUSEBUTTONUP and turno == p1:
             p1Clicou = True
             
+    estado = t.estadoAtual(cpu, p1)
+    
+    if estado != 0:
+        if estado == 1:
+            print "P1 ganhou!"
+        else:
+            print "CPU ganhou!"
+        exit()  
+            
     if turno == cpu:
-        # tabuleiro = recebe novo tabuleiro do minmax
+        #tabuleiro = recebe novo tabuleiro do minmax
+        print "cpu"
         t = Jogo.minmax(cpu, p1, t, 4)
         turno = p1
-        print "cpu"
         
     elif botoesMouse and botoesMouse[0] and p1Clicou:
         # se tem movimentos obrigatorios, seta cursor
