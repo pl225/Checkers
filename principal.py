@@ -48,12 +48,12 @@ while True:
             
     estado = t.estadoAtual(cpu, p1)
     
-    #if estado != 0:
-    #    if estado == 1:
-    #        print "P1 ganhou!"
-    #    else:
-    #        print "CPU ganhou!"
-    #    exit()  
+    if estado != 0:
+        if estado == 1:
+            print "P1 ganhou!"
+        else:
+            print "CPU ganhou!"
+        exit()  
             
     if turno == cpu:
         #tabuleiro = recebe novo tabuleiro do minmax
