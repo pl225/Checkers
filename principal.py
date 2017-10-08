@@ -26,10 +26,11 @@ pecaObrigatoria = None
 
 turno = p1
 #t.procuraPeca((350, 100)).peca = Peca((0, 0, 255))
-#t.procuraPeca((220, 300)).peca = Peca((0, 0, 255))
+#t.procuraPeca((300, 220)).peca = Peca((0, 204, 0))
+#t.procuraPeca((150, 350)).peca = Peca((0, 204, 0))
 
 #for l in t.posicoes:
- #   for p in l:
+#   for p in l:
   #      print p.linha, p.coluna,
         
    # print ''
@@ -47,12 +48,12 @@ while True:
             
     estado = t.estadoAtual(cpu, p1)
     
-    if estado != 0:
-        if estado == 1:
-            print "P1 ganhou!"
-        else:
-            print "CPU ganhou!"
-        exit()  
+    #if estado != 0:
+    #    if estado == 1:
+    #        print "P1 ganhou!"
+    #    else:
+    #        print "CPU ganhou!"
+    #    exit()  
             
     if turno == cpu:
         #tabuleiro = recebe novo tabuleiro do minmax

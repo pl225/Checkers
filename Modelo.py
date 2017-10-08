@@ -183,12 +183,21 @@ class Jogador(object):
         if obrigatoriedade[0]: # melhorar
             movs = self.movimentosPossiveis([obrigatoriedade[1].x + tabuleiro.dGrade / 2, 
                                              obrigatoriedade[1].y + tabuleiro.dGrade / 2], tabuleiro)
-            for m in movs:
-                tAux = deepcopy(tabuleiro)
+            m = movs[0]
+            tAux = deepcopy(tabuleiro)
+            pecaObrigatoria =  self.obrigadoComer(tAux)[1].peca
+            while True:
                 self.atualizaTabuleiro([obrigatoriedade[1].x + tAux.dGrade / 2, obrigatoriedade[1].y + tAux.dGrade / 2], 
                                        [tAux.posicoes[m[0]][m[1]].x + tAux.dGrade / 2,
                                         tAux.posicoes[m[0]][m[1]].y + tAux.dGrade / 2], tAux)
-                listaTabuleiros.append(tAux)
+                
+                obrigatoriedade = self.obrigadoComer(tAux)
+                if obrigatoriedade[0] and obrigatoriedade[1].peca == pecaObrigatoria:
+                    m = self.movimentosPossiveis([obrigatoriedade[1].x + tAux.dGrade / 2, 
+                                             obrigatoriedade[1].y + tAux.dGrade / 2], tAux)[0]
+                else: 
+                    listaTabuleiros.append(tAux)
+                    break
                 
         else:
             minhasPosicoes = [p for l in tabuleiro.posicoes for p in l if p.peca and p.peca.cor == self.cor] # coleta posicoes do jogador
@@ -331,7 +340,7 @@ class Jogador(object):
                         else:
                             tabuleiro.posicoes[i][j].peca = None
                             break
-            tabuleiro.posicoes[p2[0]][p2[1]].peca = tabuleiro.posicoes[p1[0]][p1[1]].peca
+                tabuleiro.posicoes[p2[0]][p2[1]].peca = tabuleiro.posicoes[p1[0]][p1[1]].peca
             tabuleiro.posicoes[p1[0]][p1[1]].peca = None
 
         if p2[0] == 0 and tabuleiro.posicoes[p2[0]][p2[1]].peca.cor == corVerde:
