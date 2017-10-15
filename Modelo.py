@@ -56,6 +56,7 @@ class Tabuleiro(object):
         self.posicoes = criarMatriz(dTela, dGrade)
         self.pecas = None
         self.cliques = [0, None]
+        self.turnos = [20, 5]
         
     def avaliacao(self, p1, p2):
         p1Posicoes = [p for l in self.posicoes for p in l if p.peca and p.peca.cor == p1.cor]
@@ -69,6 +70,14 @@ class Tabuleiro(object):
         
         if len(p1Posicoes) == 0: return 1;
         if len(p2Posicoes) == 0: return - 1;
+        
+        if len(p1Posicoes) + len(p2Posicoes) > 4:
+            self.turnos[1] = 5
+            if self.turnos[0] == 0: return 2
+        else:
+            pedras = [p for p in p1Posicoes if not p.peca.dama] + [p for p in p2Posicoes if not p.peca.dama] 
+            if self.turnos[1] == 0 and len(pedras) != len(p1Posicoes) + len(p2Posicoes): return 2
+            
         return 0
 
     def desenharTabuleiro(self, screen):
@@ -322,6 +331,8 @@ class Jogador(object):
         if math.fabs(p1[0] - p2[0]) == 1: # movimento simples
             tabuleiro.posicoes[p2[0]][p2[1]].peca = tabuleiro.posicoes[p1[0]][p1[1]].peca
             tabuleiro.posicoes[p1[0]][p1[1]].peca = None
+            tabuleiro.turnos[0] -= 1
+            tabuleiro.turnos[1] -= 1
         else:
             if not tabuleiro.posicoes[p1[0]][p1[1]].peca.dama:
                 tabuleiro.posicoes[p2[0]][p2[1]].peca = tabuleiro.posicoes[p1[0]][p1[1]].peca
@@ -330,7 +341,7 @@ class Jogador(object):
                 m = ( int((p2[0] - p1[0]) / math.fabs(p2[0] - p1[0])), int((p2[1] - p1[1]) / math.fabs(p2[1] - p1[1])) )
                 pRef = tabuleiro.posicoes[p1[0]][p1[1]]
                 i = pRef.linha; j = pRef.coluna
-                while True:
+                while i != p2[0] and j != p2[1]:
                     i += m[0]
                     j += m[1]
                     if i < 0 or j < 0 or i == tabuleiro.dimensao or j == tabuleiro.dimensao:
@@ -339,9 +350,11 @@ class Jogador(object):
                         if tabuleiro.posicoes[i][j].peca.cor == self.cor: break # ve se eh uma peca do proprio jogador
                         else:
                             tabuleiro.posicoes[i][j].peca = None
-                            break
+                            
                 tabuleiro.posicoes[p2[0]][p2[1]].peca = tabuleiro.posicoes[p1[0]][p1[1]].peca
             tabuleiro.posicoes[p1[0]][p1[1]].peca = None
+            tabuleiro.turnos[0] = 20
+            tabuleiro.turnos[1] = 5
 
         if p2[0] == 0 and tabuleiro.posicoes[p2[0]][p2[1]].peca.cor == corVerde:
             tabuleiro.posicoes[p2[0]][p2[1]].peca.dama = True

@@ -1,4 +1,4 @@
-import pygame
+import pygame, time
 from pygame.locals import *
 from sys import exit
 from Modelo import Tabuleiro, JogadorCPU, JogadorPlayer, Jogo, Peca
@@ -25,8 +25,8 @@ botoesMouse = None
 pecaObrigatoria = None
 
 turno = p1
-#t.procuraPeca((350, 100)).peca = Peca((0, 0, 255))
-#t.procuraPeca((300, 220)).peca = Peca((0, 204, 0))
+#t.procuraPeca((350, 600)).peca = Peca((0, 204, 0))
+#t.procuraPeca((600, 360)).peca = Peca((0, 0, 255), True)
 #t.procuraPeca((150, 350)).peca = Peca((0, 204, 0))
 
 #for l in t.posicoes:
@@ -51,8 +51,10 @@ while True:
     if estado != 0:
         if estado == 1:
             print "P1 ganhou!"
-        else:
+        elif estado == -1:
             print "CPU ganhou!"
+        else:
+            print "A partida foi declarada empatada!"
         exit()  
             
     if turno == cpu:
