@@ -24,7 +24,7 @@ class Jogo(object):
                 melhorItem = t
             
             alpha = max(alpha, melhorValor)
-            if beta <= alpha: break
+            if beta <= alpha: return t
             
         return melhorItem
              
@@ -43,7 +43,7 @@ class Jogo(object):
                 melhorItem = t 
             
             beta = min(beta, melhorValor)
-            if beta <= alpha: break
+            if beta <= alpha: return t
             
         return melhorItem
 
