@@ -8,7 +8,6 @@ class Client:
     def __init__(self):
         self.data = None
         self.socket = socket(AF_INET, SOCK_STREAM) 
-        self.conectar()
         
     def conectar(self):
         self.socket.connect((Client.serverHost, Client.serverPort))

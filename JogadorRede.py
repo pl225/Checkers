@@ -16,9 +16,16 @@ pygame.display.set_caption('Game of Damas')
 
 clock = pygame.time.Clock()
 
+def atualizarTela():
+    t.desenharTabuleiro(screen)
+    t.desenharPecas(screen)
+    pygame.display.update()
+
 t = Tabuleiro()
+atualizarTela()
+c = Client()
 try: 
-    c = Client()
+    c.conectar()
     cor1 = c.receber()
     cor2 = c.receber()
     if (0, 204, 0) == cor1:
@@ -36,10 +43,7 @@ try:
     else: turno = p2
     
     while True:
-        
-        t.desenharTabuleiro(screen)
-        t.desenharPecas(screen)
-        pygame.display.update()
+        atualizarTela()
     
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -52,13 +56,8 @@ try:
         estado = t.estadoAtual(p2, p1)
         
         if estado != 0:
-            if estado == 1:
-                print "P1 ganhou!"
-            elif estado == -1:
-                print "P2 ganhou!"
-            else:
-                print "A partida foi declarada empatada!"
-            break  
+            c.enviar(estado)
+            break
                 
         if turno == p2:
             t = c.receber()
@@ -76,5 +75,6 @@ try:
                    
             botoesMouse = None
             p1Clicou = False
-finally:    
+finally:
+    print c.receber()    
     c.encerrarConexao()

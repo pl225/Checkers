@@ -16,15 +16,21 @@ pygame.display.set_caption('Game of Damas')
 clock = pygame.time.Clock()
 
 t = Tabuleiro()
-try: 
-    c = Client()
+
+def atualizarTela():
+    t.desenharTabuleiro(screen)
+    t.desenharPecas(screen)
+    pygame.display.update()
     
+atualizarTela()
+c = Client()
+
+try: 
+    c.conectar()
     while True:
-        t.desenharTabuleiro(screen)
-        t.desenharPecas(screen)
-        pygame.display.update()
-        
         t = c.receber()
-        if not t:break
-finally:    
+        if isinstance(t, (int, long)):break
+        atualizarTela()
+finally:
+    print c.receber()    
     c.encerrarConexao()
